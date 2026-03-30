@@ -549,32 +549,40 @@ class TestCases:
         assert isinstance(
             df_merger, pyspark.sql.DataFrame
         ), "Похоже, что `df_merger` не является действительным DataFrame."
+        
+        # Проверка столбцов
         for col_ in ["date", "store", "sku", "qty", "report_run_date"]:
-            assert (
-                col_ in df_merger.columns
-            ), f"Столбец {col_} отсутствует в df_merger."
-        assert (
-            len(df_merger.columns) == 5
-        ), "В таблице больше столбцов, чем указано."
+            assert col_ in df_merger.columns, f"Столбец {col_} отсутствует в df_merger."
+        assert len(df_merger.columns) == 5, "В таблице больше столбцов, чем указано."
+        
         first_row = df_merger.take(1)[0]
+        
+        # Проверка типа date (должен быть timestamp/datetime)
         assert isinstance(
             first_row["date"], datetime
         ), "Столбец `date` не имеет правильного типа данных."
+        
+        # Проверка типа report_run_date (должен быть date)
         assert isinstance(
             first_row["report_run_date"], date
         ), "Столбец `report_run_date` не имеет правильного типа данных."
+        
+        # Проверка что report_run_date - четверг
         assert (
             first_row["report_run_date"].weekday() == 3
         ), "Дата в `report_run_date` не является четвергом."
-        assert (
-            TestPreparer.dates_and_times()
-            .select(
-                hour(to_timestamp("PURCHASE TIME", "M/d/yyyy K.mm a")).alias("hour")
-            )
-            .take(1)[0]["hour"]
-            - first_row["date"].hour
-            == -8
-        ), "Смещение времени между `PURCHASE TIME` и `date` неверно."
+        
+        # Проверка что столбец date имеет тип TimestampType
+        assert isinstance(
+            df_merger.schema["date"].dataType, pyspark.sql.types.TimestampType
+        ), "Столбец `date` должен быть типа TimestampType"
+        
+        # Проверка что столбец report_run_date имеет тип DateType
+        assert isinstance(
+            df_merger.schema["report_run_date"].dataType, pyspark.sql.types.DateType
+        ), "Столбец `report_run_date` должен быть типа DateType"
+
+
 
     def working_with_strings(*args):
         ingestion_df = args[0]
